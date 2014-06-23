@@ -41,6 +41,9 @@
 			// Create options menu under Settings
 			add_action( 'admin_menu', array( &$this, 'smt_create_options_page' ) );
 			
+			// Hook into the page <head>
+			add_action('wp_head', array($this, 'smt_hook_head') );
+			
 		}
 		
 		
@@ -99,12 +102,12 @@
 									</label>
 								</p>
 								
-								<p>
+								<? /*<p>
 									<label>
 										<input type="checkbox" name="<?php echo $this->option_store; ?>[enabled][schema]" value="1" <?php if($options['enabled']['schema'] == True) { echo 'checked'; } ?> />
 										Schema.org
 									</label>
-								</p>
+								</p> */ //To do: add me ?>
 							</td>
 						</tr>
 						
@@ -156,6 +159,7 @@
 			$output['twitter_user'] = sanitize_text_field($input['twitter_user']);
 			$output['gp_id']  		= sanitize_text_field($input['gp_id']);
 			
+			
 			// Check that fb_page_id is an int
 			if (strlen($output['fb_page_id']) != 0 && !is_numeric($output['fb_page_id'])) {
 				
@@ -172,12 +176,97 @@
 				
 			}
 			
+			
 			// Check to see if user has added a twitter name, and make sure it is prefixed with an '@'
 			if (strlen($output['twitter_user']) != 0 && substr($output['twitter_user'], 0, 1) != '@') {
 		        $output['twitter_user'] = '@' . $output['twitter_user'];
 		    }
 			
 			return $output;
+			
+		}
+		
+		
+		public function smt_hook_head(){
+			
+			global $post;
+			
+			// If we are not in a post get out of here...
+			if ((!isset($post) && !isset($post->ID)) || !is_single() ) {
+				return;
+			}
+			
+			// Enable post functions such as the_permalink()
+			setup_postdata($post);
+			
+			$options = get_option($this->option_store);
+			
+			// Get featured image
+			if(has_post_thumbnail($post->ID)){
+				$image = wp_get_attachment_image_src( get_post_thumbnail_id( $post->ID, array(360,150) ), 'single-post-thumbnail' );
+			}
+			
+			echo "<!-- Start Social Meta Tags -->";
+					
+			if ($options['enabled']['og_tags']):
+			?>
+				<meta property="og:description" content="<?php echo wp_trim_words(get_the_excerpt(), 75, ''); ?>" />
+				<?php if($image): ?>
+					<meta property="og:image" content="<?php echo $image[0]; ?>" />
+				<?php else: ?>
+					<meta property="og:image" content="<?php echo header_image(); ?>" />
+				<?php endif; ?>
+				<meta property="og:sitename" content="<?php echo get_bloginfo('name'); ?>" />
+				<meta property="og:title" content="<?php echo the_title(); ?>" />
+				<meta property="og:type" content="blog" />
+				<meta property="og:url" content="<?php echo the_permalink(); ?>" />
+			<?php
+			
+			// End og_tags check
+			endif;
+			
+			if ($options['fb_page_id']) :
+			?>
+				<meta property="fb:admins" content="<?php echo $options['fb_page_id'] ?>" />
+			
+			<?php
+			// End facebook page id check
+			endif;
+			
+			if ($options['enabled']['tw_tags']):
+			?>
+				<?php if($image): ?>
+				<meta property="twitter:card" content="summary_large_image" />
+				<meta property="twitter:image:src" content="<?php echo $image[0] ?>" />
+				<? else: ?>
+				<meta property="twitter:card" content="summary" />
+				<?php endif; ?>
+				
+				<?php if ($options['twitter_user']): ?>
+				<meta property="twitter:site" content="<?php echo $options['twitter_user'] ?>" />
+				<?php endif; ?>
+				
+				<meta property="twitter:title" content="<?php echo the_title() ?>" />
+				<meta property="twitter:description" content="<?php echo wp_trim_words(get_the_excerpt(), 75, ''); ?>" />
+				<meta property="twitter:url" content="<?php echo the_permalink() ?>" />
+			<?php
+			
+			// End og_tags check
+			endif;
+			
+			if($options['enabled']['gp_tags'] && $options['gp_id']):
+			?>
+			
+			<meta rel="author" content="http://plus.google.com/<?php echo $options['gp_id']; ?>/posts" />
+			<meta rel="published" content="http://plus.google.com/<?php echo $options['gp_id']; ?>" />
+			
+			<?php
+			
+			// end gp check
+			endif;
+
+			
+			echo "<!-- End Social Meta Tags -->";
 			
 		}
 		
