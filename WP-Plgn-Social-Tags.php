@@ -218,8 +218,11 @@
 				<?php endif; ?>
 				<meta property="og:sitename" content="<?php echo get_bloginfo('name'); ?>" />
 				<meta property="og:title" content="<?php echo the_title(); ?>" />
-				<meta property="og:type" content="blog" />
+				<meta property="og:type" content="article" />
 				<meta property="og:url" content="<?php echo the_permalink(); ?>" />
+				<meta property="article:published_time" content="<?php echo get_the_date('c'); ?>" />
+				<meta property="article:author" content="<?php echo get_the_author(); ?>" />
+				<meta property="article:section" content="<?php $cat = get_the_category(); echo $cat[0]->cat_name; ?>" />
 			<?php
 			
 			// End og_tags check
